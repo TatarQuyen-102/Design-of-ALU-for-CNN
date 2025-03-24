@@ -50,10 +50,11 @@ module GREATER (
 );
 
     // Wire signals for cascading
-	  wire lower_A_Less_B, lower_A_Equal_B, lower_A_Greater_B;
+	wire lower_A_Less_B, lower_A_Equal_B, lower_A_Greater_B;
     wire upper_A_Less_B, upper_A_Equal_B, upper_A_Greater_B;
 
     // Wires for NOTed A[7] and B[7]
+    // Represent the sign bit in two’s complement representation, negating them ensures a correct signed comparison.
     wire not_A7, not_B7;
 
     // Invert A[7] and B[7]
