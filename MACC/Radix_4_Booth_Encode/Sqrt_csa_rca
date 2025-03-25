@@ -1,0 +1,27 @@
+module rca #( parameter N = 4)(
+    input  wire [N-1:0] A, B,
+    input  wire Cin,  
+    output wire [N-1:0] Sum,
+    output wire Cout
+);
+    wire [N:0] carry;  
+    wire [N-1:0] B_xor; 
+
+    assign carry[0] = Cin; 
+    assign B_xor = B ^ {N{Cin}}; 
+
+    genvar i;
+    generate
+        for (i = 0; i < N; i = i + 1) begin : adder_stage
+            full_adder FA (
+                .A(A[i]), 
+                .B(B_xor[i]), 
+                .Cin(carry[i]), 
+                .Sum(Sum[i]), 
+                .Cout(carry[i+1])
+            );
+        end
+    endgenerate
+
+    assign Cout = carry[N]; 
+endmodule

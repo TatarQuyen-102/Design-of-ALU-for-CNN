@@ -1,0 +1,10 @@
+module Booth_encoder (
+    input  wire B0, B1, B2,  
+    output wire Y0, Y1, Y2  
+);
+
+    assign Y2 = B2;               
+    assign Y1 = B1 ^ B0;       
+    assign Y0 = Y1 ^ (B2 ~^ B1);  // XNOR + XOR 
+
+endmodule
