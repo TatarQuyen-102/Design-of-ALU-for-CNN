@@ -1,5 +1,5 @@
 // Verilog Code cho 10-bit Modified BEC
-module Modified_BEC_10bit (
+module mod_bec (
     input [9:0] B,   // Đầu vào 10-bit
     output [9:0] X   // Đầu ra 10-bit (B + 1)
 );
@@ -10,8 +10,8 @@ module Modified_BEC_10bit (
     assign X[0] = ~B[0];  
 
     // Nhóm AND-3 và AND-4 theo cấu trúc 2-3-4
-    assign AND_out[0] = B[0] & B[1] & B[2];               // 3-input AND
-    assign AND_out[1] = B[0] & B[1] & B[2] & B[3];        // 4-input AND
+    assign AND_out[0] = B[0] & B[1] & B[2];              // 3-input AND
+    assign AND_out[1] = B[0] & B[1] & B[2] & B[3];       // 4-input AND
     assign AND_out[2] = B[4] & AND_out[1];               // AND với giá trị trước đó
     assign AND_out[3] = B[5] & B[4] & AND_out[1];        // 3-input AND
     assign AND_out[4] = AND_out[1] & B[6] & B[5] & B[4]; // 4-input AND

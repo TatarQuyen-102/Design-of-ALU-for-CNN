@@ -1,0 +1,331 @@
+module CNN (
+    reset,
+    clk,
+    scan_in0,
+    scan_en,
+    test_mode,
+    scan_out0,
+
+    o_m_wb_adr,
+    o_m_wb_sel,
+    o_m_wb_stb,
+    i_m_wb_ack,
+    i_m_wb_err,
+    o_m_wb_we,
+    o_m_wb_cyc,
+    o_m_wb_dat,
+    i_m_wb_dat,
+
+    o_s_wb_ack,
+    o_s_wb_err,
+    i_s_wb_adr,
+    i_s_wb_sel,
+    i_s_wb_we,
+    i_s_wb_dat,
+    o_s_wb_dat,
+    i_s_wb_cyc,
+    i_s_wb_stb
+);
+
+`include "../include/register_addresses.vh"
+`include "../include/cnn_state_defs.vh"
+
+parameter BIT_WIDTH = 8;
+parameter WB_SWIDTH = 4;
+parameter WB_DWIDTH = 32; // MAX_OP_SIZE is max(row, col) + col * row
+parameter MAX_WEIGHTS = 352 + 4; // MAX_WEIGHTS is maxweight + 4
+parameter MAX_OP_SIZE = 62 + 62 ** 2;
+
+input
+    reset, // system reset
+    clk; // system clock
+
+input
+    scan_in0, // test scan mode data input
+    scan_en, // test scan mode enable
+    test_mode; // test mode select
+
+output
+    scan_out0; // test scan mode data output
+
+
+// Wishbone master and slave ports
+input [WB_DWIDTH-1:0] i_m_wb_dat;        // Dữ liệu từ master
+input i_m_wb_ack;                        // Tín hiệu xác nhận từ master
+input i_m_wb_err;                        // Tín hiệu lỗi từ master
+input [31:0] i_s_wb_adr;                 // Địa chỉ từ slave
+input [WB_SWIDTH-1:0] i_s_wb_sel;       // Tín hiệu chọn byte từ slave
+input i_s_wb_we;                         // Tín hiệu ghi từ slave
+input [WB_DWIDTH-1:0] i_s_wb_dat;       // Dữ liệu từ slave
+input i_s_wb_cyc;                        // Tín hiệu chu kỳ từ slave
+input i_s_wb_stb;                        // Tín hiệu kích hoạt từ slave
+
+output reg [WB_DWIDTH-1:0] o_m_wb_adr;  // Địa chỉ ra từ master
+output reg [WB_SWIDTH-1:0] o_m_wb_sel;  // Tín hiệu chọn byte ra từ master
+output reg o_m_wb_we;                    // Tín hiệu ghi ra từ master
+output reg [WB_DWIDTH-1:0] o_m_wb_dat;  // Dữ liệu ra từ master
+output reg o_m_wb_cyc;                   // Tín hiệu chu kỳ ra từ master
+output reg o_m_wb_stb;                   // Tín hiệu kích hoạt ra từ master
+output reg [WB_DWIDTH-1:0] o_s_wb_dat;   // Dữ liệu ra từ slave
+output reg o_s_wb_ack;                   // Tín hiệu xác nhận ra từ slave
+output reg o_s_wb_err;                   // Tín hiệu lỗi ra từ slave
+
+// Read / Write FSM
+reg [1:0] wb_master_state ;
+reg send_slave_ack ;
+
+// Address FSM
+reg [2:0] address_state;                // Trạng thái địa chỉ
+reg start_read_mst, start_write_mst;   // Tín hiệu bắt đầu đọc và ghi của master
+
+// Configuration State Machine
+*********************************
+// Convolution
+reg [7:0] conv_op_size_c; // number of columns of the 2D output feature map
+reg conv_mp_stride_w; // maximum pooling stride in the width
+reg conv_mp_stride_h; // maximum pooling stride in the height
+reg conv_mp_size_c; // number of columns after max pooling
+
+reg conv_op_stride_w; // convolution stride of the next layer in the width
+reg conv_op_stride_h; // convolution stride of the next layer in the height
+reg conv_op_win_size; // width * height of the kernel of the next layer
+
+reg layer_out_c; // number of columns of the output of the layer with or without pooling
+reg layer_out_r; // number of rows of the output of the layer with or without pooling
+reg next_layer_out_c; // number of columns of the output of the next layer's convolution
+
+reg [8:0] conv_mp_sel; // select for the max pooling block
+
+reg [4:0] num_1_2_4_val_xfr; // how many transfers of do_1_2_4_val_xfr values to do - TODO: can be smaller
+reg [2:0] do_1_2_4_val_xfr; // do we need to do 1, 2, or 4-value transfers when im2col storing?
+
+reg [15:0] conv_mp_size_rc; // number of rows * number of columns of the output of max pooling
+reg conv_op_size_rc; // number of rows * number of columns of the result of the convolution
+reg num_weights; // total number of weights used at once for convolution/macc
+reg layer_out_rc; // size of the output of the layer, after any potential pooling
+reg next_layer_out_rc; // number of (columns * rows) of the output of the next layer's convolution
+reg conv_num_fil; // number of filters
+
+// Flags
+reg mode_flag; // 0 for CONV | 1 for FC
+reg mxpl_flag; // 0 for no MAXPOOL | 1 for MAXPOOL
+reg cmp_flag; // 0 for no CLIP | 1 for CLIP (output)
+reg shft_flag; // 0 for no SHIFT | 1 for SHIFT (output)
+reg data_type; // 1 for audio | 0 for image
+reg flat_flag; // 0 if next layer is CONV | 1 if next layer is FC
+							// for 8 bits, cmp_val is 7 bits and shft_val is 3 bits wide
+reg [6:0] cmp_val; // upper bound for the output after clipping
+reg [2:0] shft_val; // by how much the output is shifted after RELU
+
+// Other
+reg [31:0] adr_wt_base_ptr; // weight base pointer for address
+reg [31:0] adr_ip_base_ptr; // input base pointer for address
+reg [31:0] adr_op_base_ptr; // output base pointer for address
+
+reg [3:0] config_audio_ptr; // pointer for audio configuration
+reg [3:0] config_image_ptr; // pointer for image configuration
+
+reg [4:0] config_state; // configuration state register
+
+reg [20:0] curr_config_base; // from slave port
+reg [20:0] cnfg_adr_base_ptr; // same as above but holds its values until all computations are done
+
+wire [7:0] config_type_ptr; // pointer for configuration type
+wire num_layers; // number of layers
+
+wire [31:0] layer_addr; // address for the layer
+
+reg [7:0] layer_count; // count of layers
+reg num_layers_audio; // number of audio layers
+reg num_layers_image; // number of image layers
+reg [3:0] config_adr_offset; // maybe reduce bit width
+
+// Status
+reg CNN_done; // signal to indicate that CNN processing is done
+reg sw_reset; // software reset signal
+reg start_bit; // signal to start the process
+reg start_bit_d; // delayed start bit signal
+reg config_active; // active configuration signal
+reg start_read_slv_d; // delayed signal to start reading from slave
+reg config_list_done; // signal indicating configuration list is done
+reg config_layerX_done; // signal indicating the current layer is done
+
+wire reset_mux; // multiplexer reset signal
+wire start_read_slv; // signal to start reading from slave
+wire start_write_slv; // signal to start writing to slave
+wire start_bit_posedge; // rising edge of the start bit signal
+
+wire layer_done; // signal indicating the end of the current layer - can move to the next layer
+
+// Read Values State Machine
+reg [7:0] fltr_cnt; // filter count
+reg [15:0] fm_cnt; // feature map count
+reg [15:0] wt_cnt; // weight count
+reg [15:0] macc_cnt; // multiply-accumulate count
+
+reg read_wt; // signal to read weights
+reg read_fm; // signal to read feature maps
+reg start_macc; // signal to start multiply-accumulate operation
+reg read_val_done; // signal indicating that reading values is done
+reg read_val_active; // signal indicating that reading values is active
+
+reg [2:0] read_val_state; // state of the value reading process
+
+reg [31:0] adr_wt_offset; // address offset for weights
+reg [31:0] adr_fm_offset; // address offset for feature maps
+
+integer j, k, m; // used to reset buffers
+
+// Store Values State Machine
+reg store_val_active; // signal indicating that storing values is active
+reg store_val_done; // signal indicating that storing values is done
+reg store_val_start; // signal to start storing values
+reg store_mxpl; // signal for storing max pooling results
+reg stored_one_fmap; // signal indicating that one feature map is stored
+
+reg [7:0] current_1st_row; // current first row index
+reg [7:0] current_1st_col; // current first column index
+reg [7:0] num_val_per_win; // number of values per window
+
+reg [4:0] num_1_2_4_val_xfr_cnt; // count for 1, 2, or 4 value transfers
+reg [3:0] store_val_state; // state of the value storing process
+
+reg [15:0] num_win_done_total; // total number of windows done
+reg [15:0] num_win_per_row; // number of windows per row
+reg [15:0] x; // x coordinate
+reg [15:0] y; // y coordinate
+
+reg [31:0] store_val_addr_offset; // address offset for storing values
+
+reg [15:0] buf2D_index_0; // index for 2D buffer at position 0
+reg [15:0] buf2D_index_1; // index for 2D buffer at position 1
+reg [15:0] buf2D_index_2; // index for 2D buffer at position 2
+reg [15:0] buf2D_index_3; // index for 2D buffer at position 3
+
+wire [BIT_WIDTH-1:0] buf2D_val0; // value from 2D buffer at position 0
+wire [BIT_WIDTH-1:0] buf2D_val1; // value from 2D buffer at position 1
+wire [BIT_WIDTH-1:0] buf2D_val2; // value from 2D buffer at position 2
+wire [BIT_WIDTH-1:0] buf2D_val3; // value from 2D buffer at position 3
+
+reg [31:0] store_val_addr; // address for storing values
+wire [7:0] store_val_fc_flat; // flattened output for fully connected layer
+
+wire [3:0] select_options[0:3]; // 4 different options for selection
+
+assign select_options[0] = (do_1_2_4_val_xfr == 2) ? 4'h3 : 4'h1; // selection option 0
+assign select_options[1] = 4'h2; // selection option 1
+assign select_options[2] = (do_1_2_4_val_xfr == 2) ? 4'hc : 4'h4; // selection option 2
+assign select_options[3] = 4'h8; // selection option 3
+
+// Buffers
+// hold weights and feature maps
+reg [BIT_WIDTH-1:0] buf0[0:MAX_WEIGHTS-1]; // buffer for weights and feature maps 0
+reg [BIT_WIDTH-1:0] buf1[0:MAX_WEIGHTS-1]; // buffer for weights and feature maps 1
+
+// hold 2D feature maps
+reg [BIT_WIDTH-1:0] buf2D[0:MAX_OP_SIZE-1]; // buffer for 2D feature maps
+
+// Multiply and Accumulate (MACC) State Machine
+reg [15:0] macc_cycles; // number of cycles for MACC
+reg [3:0] macc_state; // state of MACC
+reg [7:0] x_mp; // x-coordinate for max pooling
+reg [7:0] y_mp; // y-coordinate for max pooling
+reg [7:0] num_mp_per_row; // number of max pooling operations per row
+
+reg macc_done; // indicates if MACC is done
+reg start_maxpool; // signal to start max pooling
+reg mxpl_launched; // indicates if max pooling has been launched
+reg mxpl_available; // indicates if max pooling is available
+
+// ALU 
+reg accum_start; // signal to start accumulation
+
+// wire for max pooling selection
+wire [8:0] mxpl_sel; 
+
+reg [BIT_WIDTH-1:0] mul_in1; // first input for multiplication
+reg [BIT_WIDTH-1:0] mul_in2; // second input for multiplication
+reg [BIT_WIDTH-1:0] mxpl_in0; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in1; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in2; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in3; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in4; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in5; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in6; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in7; // input for max pooling
+reg [BIT_WIDTH-1:0] mxpl_in8; // input for max pooling
+
+// wire for various outputs
+wire [BIT_WIDTH-1:0] mul_out; // output from multiplication
+wire [BIT_WIDTH-1:0] relu_out; // output from ReLU operation
+wire [BIT_WIDTH-1:0] mxpl_out; // output from max pooling
+wire [BIT_WIDTH-1:0] mxpl_in0_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in1_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in2_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in3_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in4_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in5_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in6_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in7_temp; // temporary input for max pooling
+wire [BIT_WIDTH-1:0] mxpl_in8_temp; // temporary input for max pooling
+
+wire [BIT_WIDTH*2-1:0] accum_out; // output from accumulator
+
+ACCUM #(.BIT_WIDTH(BIT_WIDTH)) accum (
+    .reset(reset_mux),
+    .clk(clk),
+    .scan_in0(scan_in0),
+    .scan_en(scan_en),
+    .test_mode(test_mode),
+    .scan_out0(scan_out0),
+    .start_bit(accum_start),
+    .in(mul_out),
+    .out(accum_out)
+);
+
+MUL #(.BIT_WIDTH(BIT_WIDTH)) mul (
+    .reset(reset_mux),
+    .clk(clk),
+    .scan_in0(scan_in0),
+    .scan_en(scan_en),
+    .test_mode(test_mode),
+    .scan_out0(scan_out0),
+    .in1(mul_in1),
+    .in2(mul_in2),
+    .out(mul_out)
+);
+
+RELU #(.IP_WIDTH(BIT_WIDTH*2), .OP_WIDTH(BIT_WIDTH)) relu (
+    .reset(reset_mux),
+    .clk(clk),
+    .scan_in0(scan_in0),
+    .scan_en(scan_en),
+    .test_mode(test_mode),
+    .scan_out0(scan_out0),
+    .val_in(accum_out),
+    .val_out(relu_out),
+    .cmp_flag(cmp_flag),
+    .shft_flag(shft_flag),
+    .cmp_val({1'b0, cmp_val[6:0]}), // need to change width for 8 bits
+    .shft_val(shft_val)
+);
+
+POOLING #(.BIT_WIDTH(BIT_WIDTH)) pool (
+    .reset(reset_mux),
+    .clk(clk),
+    .scan_in0(scan_in0),
+    .scan_en(scan_en),
+    .test_mode(test_mode),
+    .scan_out0(scan_out0),
+    .inX_sel(conv_mp_sel),
+    .in0(mxpl_in0),
+    .in1(mxpl_in1),
+    .in2(mxpl_in2),
+    .in3(mxpl_in3),
+    .in4(mxpl_in4),
+    .in5(mxpl_in5),
+    .in6(mxpl_in6),
+    .in7(mxpl_in7),
+    .in8(mxpl_in8),
+    .out(mxpl_out)
+);
