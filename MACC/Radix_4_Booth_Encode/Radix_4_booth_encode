@@ -34,19 +34,19 @@ multiplier_by_n #( .N(8), .S(1)) mul_2x(
     .Y(m_2x));
 
 // mux3to1
-mux3to1 #(.N(9)) mux_s1(.A(1'b0) , .B(m_2x), .C(x),
+mux3to1 #(.N(9)) mux_s1(.A(1'b0) , .B(m_2x), .C({x[7],x}),
                         .S0(o_s1_be[0])  , .S1(o_s1_be[1]),
                         .Out(o_s1_mux3to1));
 
-mux3to1 #(.N(9)) mux_s2(.A(1'b0) , .B(m_2x), .C(x),
+mux3to1 #(.N(9)) mux_s2(.A(1'b0) , .B(m_2x), .C({x[7],x}),
                         .S0(o_s2_be[0])  , .S1(o_s2_be[1]),
                         .Out(o_s2_mux3to1));
 
-mux3to1 #(.N(9)) mux_s3(.A(1'b0) , .B(m_2x), .C(x),
+mux3to1 #(.N(9)) mux_s3(.A(1'b0) , .B(m_2x), .C({x[7],x}),
                         .S0(o_s3_be[0])  , .S1(o_s3_be[1]),
                         .Out(o_s3_mux3to1));
 
-mux3to1 #(.N(9)) mux_s4(.A(1'b0) , .B(m_2x), .C(x),
+mux3to1 #(.N(9)) mux_s4(.A(1'b0) , .B(m_2x), .C({x[7],x}),
                         .S0(o_s4_be[0])  , .S1(o_s4_be[1]),
                         .Out(o_s4_mux3to1));
 
@@ -79,12 +79,12 @@ sqrt_csa_rsa sqrt_csa_rsa_s2(.A({o_s1[8], o_s1[8], o_s1[8:2]}),
                              .Cin(o_s2_be[2]), 
                              .Out(o_s2));
 
-sqrt_csa_rsa sqrt_csa_rsa_s3(.A({o_s2[8],o_s2[8:2]}), 
+sqrt_csa_rsa sqrt_csa_rsa_s3(.A({o_s2[8],o_s2[9:2]}), 
                              .B(o_s3_mux3to1), 
                              .Cin(o_s3_be[2]), 
                              .Out(o_s3));
 
-sqrt_csa_rsa sqrt_csa_rsa_s4(.A({o_s3[8],o_s3[8:2]}), 
+sqrt_csa_rsa sqrt_csa_rsa_s4(.A({o_s3[8],o_s3[9:2]}), 
                              .B(o_s4_mux3to1), 
                              .Cin(o_s4_be[2]), 
                              .Out(o_s4));
@@ -92,8 +92,6 @@ sqrt_csa_rsa sqrt_csa_rsa_s4(.A({o_s3[8],o_s3[8:2]}),
 assign o_mul = {o_s4, o_s3[1:0], o_s2[1:0], o_s1[1:0]};
 
 endmodule
-
-
 
 
 ////////////////////////////////////////////
@@ -164,7 +162,7 @@ assign Out = {o_rsa_4bit, o_rsa_3bit[2:0], o_rsa_2bit[1:0]};
 endmodule
 
 ////////////////////////////////////////////
-module rca #( parameter N = 4 ) (
+module rsa #( parameter N = 4 ) (
     input  wire [N-1:0] A, B,  // Các toán hạng đầu vào
     input  wire Cin,           // Bit nhớ vào
     output wire [N-1:0] Sum,   // Tổng đầu ra
@@ -262,5 +260,17 @@ module booth_encoder (
     assign P2 = B2;               
     assign P1 = B1 ^ B0;       
     assign P0 = P1 ^ (B2 ~^ B1);  // XNOR + XOR 
+
+endmodule
+////////////////////////////////////////
+module mux3to1 #(parameter N = 9) (
+input  wire [N-1:0] A, B, C,  
+input  wire S0, S1,         
+output wire [N-1:0] Out         
+);
+
+assign Z =  (S1 == 0 && S0 == 0) ? A :
+            (S1 == 0 && S0 == 1) ? B :
+            (S1 == 1 && S0 == 0) ? C : 0;
 
 endmodule
