@@ -4,6 +4,9 @@ module Mul (
     output [14:0] o_mul
 );
 
+// output - multiply by 2
+wire [8:0] m_2x;
+
 // output - wire booth encoder
 wire [2:0] o_s1_be;
 wire [2:0] o_s2_be;
@@ -11,35 +14,37 @@ wire [2:0] o_s3_be;
 wire [2:0] o_s4_be;
 
 // output - wire mux3to1
-wire o_s1_mux3to1;
-wire o_s2_mux3to1;
-wire o_s3_mux3to1;
-wire o_s4_mux3to1;
+wire [8:0] o_s1_mux3to1;
+wire [8:0] o_s2_mux3to1;
+wire [8:0] o_s3_mux3to1;
+wire [8:0] o_s4_mux3to1;
 
 // output - wire of each stage of multiplier
 wire [8:0] o_s1;
-wire [8:0] o_s2;
-wire [8:0] o_s3;
-wire [8:0] o_s4;
+wire [9:0] o_s2;
+wire [9:0] o_s3;
+wire [9:0] o_s4;
 
 // multiply 2
-mul_2x mul_s1_2x(.In(x), .Out(2x));
+multiplier_by_n #( .N(8), .S(1)) mul_2x(
+    .A(x),
+    .Y(m_2x));
 
 // mux3to1
-mux3to1 #(.N(9)) mux_s1(.A(1'b0) , .B(2x), .C(x),
-                        .S0(o_s1_be[0])  , .S1(o_s1_be[1])
+mux3to1 #(.N(9)) mux_s1(.A(1'b0) , .B(m_2x), .C(x),
+                        .S0(o_s1_be[0])  , .S1(o_s1_be[1]),
                         .Out(o_s1_mux3to1));
 
-mux3to1 #(.N(9)) mux_s2(.A(1'b0) , .B(2x), .C(x),
-                        .S0(o_s2_be[0])  , .S1(o_s2_be[1])
+mux3to1 #(.N(9)) mux_s2(.A(1'b0) , .B(m_2x), .C(x),
+                        .S0(o_s2_be[0])  , .S1(o_s2_be[1]),
                         .Out(o_s2_mux3to1));
 
-mux3to1 #(.N(9)) mux_s3(.A(1'b0) , .B(2x), .C(x),
-                        .S0(o_s3_be[0])  , .S1(o_s3_be[1])
+mux3to1 #(.N(9)) mux_s3(.A(1'b0) , .B(m_2x), .C(x),
+                        .S0(o_s3_be[0])  , .S1(o_s3_be[1]),
                         .Out(o_s3_mux3to1));
 
-mux3to1 #(.N(9)) mux_s4(.A(1'b0) , .B(2x), .C(x),
-                        .S0(o_s4_be[0])  , .S1(o_s4_be[1])
+mux3to1 #(.N(9)) mux_s4(.A(1'b0) , .B(m_2x), .C(x),
+                        .S0(o_s4_be[0])  , .S1(o_s4_be[1]),
                         .Out(o_s4_mux3to1));
 
 // booth encoder
@@ -66,90 +71,21 @@ mux2to1 mux2to1_s1( .In0(o_s1_mux3to1),
                     .Out(o_s1));
 
 // sqrt carry save adder using RSA
-sqrt_csa_rsa sqrt_csa_rsa_s2(.A({2{o_s1[8]},o_s1[8:2]}), 
+sqrt_csa_rsa sqrt_csa_rsa_s2(.A({o_s1[8], o_s1[8], o_s1[8:2]}),
                              .B(o_s2_mux3to1), 
                              .Cin(o_s2_be[2]), 
                              .Out(o_s2));
 
-sqrt_csa_rsa sqrt_csa_rsa_s3(.A({2{o_s2[8]},o_s2[8:2]}), 
+sqrt_csa_rsa sqrt_csa_rsa_s3(.A({o_s2[8],o_s2[8:2]}), 
                              .B(o_s3_mux3to1), 
                              .Cin(o_s3_be[2]), 
                              .Out(o_s3));
 
-sqrt_csa_rsa sqrt_csa_rsa_s4(.A({2{o_s3[8]},o_s3[8:2]}), 
+sqrt_csa_rsa sqrt_csa_rsa_s4(.A({o_s3[8],o_s3[8:2]}), 
                              .B(o_s4_mux3to1), 
                              .Cin(o_s4_be[2]), 
                              .Out(o_s4));
 
 assign o_mul = {o_s4, o_s3[1:0], o_s2[1:0], o_s1[1:0]};
-
-endmodule
-
-///////////////////////////////////
-module mux2to1 #(parameter N = 9) (
-    input  [N-1:0] In0, In1,
-    input  Sel,
-    output [N-1:0] Out
-);
-    assign Out = Sel ? In1 : In0;
-endmodule
-
-//////////////////////////////////
-module mux3to1 #(parameter N = 9) (
-input  wire [N-1:0] A, B, C,  
-input  wire S0, S1,         
-output wire [N-1:0] Out         
-);
-
-assign Out =  (S1 == 0 && S0 == 0) ? A :
-            (S1 == 0 && S0 == 1) ? B :
-            (S1 == 1 && S0 == 0) ? C : 0;
-
-endmodule
-
-//////////////////////////////////
-// Verilog Code cho 10-bit Modified BEC
-module mod_bec (
-    input [9:0] B,   // Đầu vào 10-bit
-    output [9:0] X   // Đầu ra 10-bit (B + 1)
-);
-    
-    wire [7:0] AND_out; // Tín hiệu trung gian từ các cổng AND
-    
-    // Cổng NOT cho bit đầu tiên
-    assign X[0] = ~B[0];  
-
-    // Nhóm AND-3 và AND-4 theo cấu trúc 2-3-4
-    assign AND_out[0] = B[0] & B[1] & B[2];              // 3-input AND
-    assign AND_out[1] = B[0] & B[1] & B[2] & B[3];       // 4-input AND
-    assign AND_out[2] = B[4] & AND_out[1];               // AND với giá trị trước đó
-    assign AND_out[3] = B[5] & B[4] & AND_out[1];        // 3-input AND
-    assign AND_out[4] = AND_out[1] & B[6] & B[5] & B[4]; // 4-input AND
-    assign AND_out[5] = B[7] & AND_out[4];               // AND với giá trị trước đó
-    assign AND_out[6] = B[8] & B[7] & AND_out[4];        // 3-input AND
-    assign AND_out[7] = B[9] & B[8] & B[7] & AND_out[4]; // 4-input AND
-
-    // Tính toán các giá trị đầu ra X[i]
-    assign X[1] = B[1] ^ B[0];
-    assign X[2] = B[2] ^ (B[1] & B[0]);
-    assign X[3] = B[3] ^ AND_out[0];
-    assign X[4] = B[4] ^ AND_out[1];
-    assign X[5] = B[5] ^ AND_out[2];
-    assign X[6] = B[6] ^ AND_out[3];
-    assign X[7] = B[7] ^ AND_out[4];
-    assign X[8] = B[8] ^ AND_out[5];
-    assign X[9] = B[9] ^ AND_out[6];
-
-endmodule
-
-///////////////////////////////
-module booth_encoder (
-    input  wire B0, B1, B2,  
-    output wire P0, P1, P2  
-);
-
-    assign P2 = B2;               
-    assign P1 = B1 ^ B0;       
-    assign P0 = P1 ^ (B2 ~^ B1);  // XNOR + XOR 
 
 endmodule
