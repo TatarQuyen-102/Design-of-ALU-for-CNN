@@ -4,8 +4,8 @@ input  wire S0, S1,
 output wire [N-1:0] Out         
 );
 
-assign Z =  (S1 == 0 && S0 == 0) ? A :
-            (S1 == 0 && S0 == 1) ? B :
-            (S1 == 1 && S0 == 0) ? C : 0;
+assign Out =    (S1 == 0 && S0 == 0) ? A :
+                (S1 == 0 && S0 == 1) ? B :
+                (S1 == 1 && S0 == 0) ? C : A;
 
 endmodule

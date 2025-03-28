@@ -1,0 +1,59 @@
+$date
+	Fri Mar 28 23:29:45 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_mux3to1 $end
+$var wire 9 ! Out [8:0] $end
+$var reg 9 " A [8:0] $end
+$var reg 9 # B [8:0] $end
+$var reg 9 $ C [8:0] $end
+$var reg 1 % S0 $end
+$var reg 1 & S1 $end
+$scope module uut $end
+$var wire 9 ' A [8:0] $end
+$var wire 9 ( B [8:0] $end
+$var wire 9 ) C [8:0] $end
+$var wire 9 * Out [8:0] $end
+$var wire 1 + S0 $end
+$var wire 1 , S1 $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+0,
+0+
+b1 *
+b100 )
+b10 (
+b1 '
+0&
+0%
+b100 $
+b10 #
+b1 "
+b1 !
+$end
+#10000
+b10 !
+b10 *
+1%
+1+
+#20000
+b100 !
+b100 *
+0%
+0+
+1&
+1,
+#30000
+b1 !
+b1 *
+1%
+1+
+#40000

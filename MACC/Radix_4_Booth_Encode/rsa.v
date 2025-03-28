@@ -1,4 +1,4 @@
-module rca #( parameter N = 4 ) (
+module rsa #( parameter N = 4 ) (
     input  wire [N-1:0] A, B,  // Các toán hạng đầu vào
     input  wire Cin,           // Bit nhớ vào
     output wire [N-1:0] Sum,   // Tổng đầu ra

@@ -63,3 +63,54 @@ mux2to1 #(.N(5)) mux_5bit(  .In0(o_rsa_4bit_add),
 assign Out = {o_rsa_4bit, o_rsa_3bit[2:0], o_rsa_2bit[1:0]};
 
 endmodule
+
+
+/////////////////////////////////
+
+module rsa #( parameter N = 4 ) (
+    input  wire [N-1:0] A, B,  // Các toán hạng đầu vào
+    input  wire Cin,           // Bit nhớ vào
+    output wire [N-1:0] Sum,   // Tổng đầu ra
+    output wire Cout           // Bit nhớ ra
+);
+    wire [N:0] carry;          // Dây để truyền bit nhớ giữa các bộ cộng
+    wire [N-1:0] B_xor;        // B XOR với Cin để hỗ trợ phép trừ khi cần
+
+    assign carry[0] = Cin; 
+    assign B_xor = B ^ {N{Cin}};  // Nếu Cin = 1, sẽ thực hiện phép trừ A - B
+
+    genvar i;
+    generate
+        for (i = 0; i < N; i = i + 1) begin : adder_stage
+            full_adder FA (
+                .A(A[i]), 
+                .B(B_xor[i]), 
+                .Cin(carry[i]), 
+                .Sum(Sum[i]), 
+                .Cout(carry[i+1])
+            );
+        end
+    endgenerate
+
+    assign Cout = carry[N];  // Bit nhớ cuối cùng
+endmodule
+
+
+// Full Adder 1-bit
+module full_adder (
+    input  wire A, B, Cin,  
+    output wire Sum, Cout   
+);
+    assign Sum  = A ^ B ^ Cin; 
+    assign Cout = (A & B) | (A & Cin) | (B & Cin);  
+endmodule
+
+
+///////////////////////////
+module mux2to1 #(parameter N = 9) (
+    input  [N-1:0] In0, In1,
+    input  Sel,
+    output [N-1:0] Out
+);
+    assign Out = Sel ? In1 : In0;
+endmodule
