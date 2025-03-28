@@ -13,6 +13,9 @@ wire [2:0] o_s2_be;
 wire [2:0] o_s3_be;
 wire [2:0] o_s4_be;
 
+// output - wire mod bec
+wire [8:0] o_s1_bec;
+
 // output - wire mux3to1
 wire [8:0] o_s1_mux3to1;
 wire [8:0] o_s2_mux3to1;
@@ -61,14 +64,14 @@ booth_encoder be_s4( .B0(y[5]), .B1(y[6]), .B2(y[7]),
                      .P0(o_s4_be[0]), .P1(o_s4_be[1]), .P2(o_s4_be[2]));
 
 // modified BEC of stage 1
-mod_bec mod_bec_s1(.B(o_s1_mux3to1),   // Đầu vào 10-bit
+mod_bec mod_bec_s1(.B(o_s1_mux3to1),   // Đầu vào 9-bit
                    .X(o_s1_bec));
 
 // Mux2to1 of stage 1
-mux2to1 mux2to1_s1( .In0(o_s1_mux3to1), 
-                    .In1(o_s1_bec), 
-                    .Sel(o_s1_be[2]), 
-                    .Out(o_s1));
+mux2to1 #(.N(9)) mux2to1_s1(.In0(o_s1_mux3to1), 
+                            .In1(o_s1_bec), 
+                            .Sel(o_s1_be[2]), 
+                            .Out(o_s1));
 
 // sqrt carry save adder using RSA
 sqrt_csa_rsa sqrt_csa_rsa_s2(.A({o_s1[8], o_s1[8], o_s1[8:2]}),
