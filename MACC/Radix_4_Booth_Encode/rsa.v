@@ -7,8 +7,9 @@ module rsa #( parameter N = 4 ) (
     wire [N:0] carry;          // Dây để truyền bit nhớ giữa các bộ cộng
     wire [N-1:0] B_xor;        // B XOR với Cin để hỗ trợ phép trừ khi cần
 
-    assign carry[0] = Cin; 
     assign B_xor = B ^ {N{Cin}};  // Nếu Cin = 1, sẽ thực hiện phép trừ A - B
+    assign carry[0] = Cin; 
+    
 
     genvar i;
     generate
@@ -23,7 +24,9 @@ module rsa #( parameter N = 4 ) (
         end
     endgenerate
 
-    assign Cout = carry[N];  // Bit nhớ cuối cùng
+    assign carry_sign = carry[N];  
+    assign Cout = carry_sign ^ Cin;  // Xữ lý bit có dấu khi trừ
+
 endmodule
 
 
