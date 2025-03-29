@@ -28,25 +28,25 @@ rsa #(.N(2)) rsa_2bit(  .A(A[1:0]),
 
 rsa #(.N(3)) rsa_3bit_add(  .A(A[4:2]),
                             .B(B[4:2]),
-                            .Cin(1'b0),
+                            .Cin(0),
                             .Sum(o_rsa_3bit_add[2:0]),
                             .Cout(o_rsa_3bit_add[3]));
 
 rsa #(.N(3)) rsa_3bit_sub(  .A(A[4:2]),
                             .B(B[4:2]),
-                            .Cin(1'b1),
+                            .Cin(1),
                             .Sum(o_rsa_3bit_sub[2:0]),
                             .Cout(o_rsa_3bit_sub[3]));                           
 
 rsa #(.N(4)) rsa_4bit_add(  .A(A[8:5]),
                             .B(B[8:5]),
-                            .Cin(1'b0),
+                            .Cin(0),
                             .Sum(o_rsa_4bit_add[3:0]),
                             .Cout(o_rsa_4bit_add[4]));
 
 rsa #(.N(4)) rsa_4bit_sub(  .A(A[8:5]),
                             .B(B[8:5]),
-                            .Cin(1'b1),
+                            .Cin(1),
                             .Sum(o_rsa_4bit_sub[3:0]),
                             .Cout(o_rsa_4bit_sub[4])); 
 
@@ -76,8 +76,9 @@ module rsa #( parameter N = 4 ) (
     wire [N:0] carry;          // Dây để truyền bit nhớ giữa các bộ cộng
     wire [N-1:0] B_xor;        // B XOR với Cin để hỗ trợ phép trừ khi cần
 
-    assign carry[0] = Cin; 
     assign B_xor = B ^ {N{Cin}};  // Nếu Cin = 1, sẽ thực hiện phép trừ A - B
+    assign carry[0] = Cin; 
+    
 
     genvar i;
     generate
@@ -92,7 +93,9 @@ module rsa #( parameter N = 4 ) (
         end
     endgenerate
 
-    assign Cout = carry[N];  // Bit nhớ cuối cùng
+    assign carry_sign = carry[N];  
+    assign Cout = carry_sign ^ Cin;  // Xữ lý bit có dấu khi trừ
+
 endmodule
 
 
