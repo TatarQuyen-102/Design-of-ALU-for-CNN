@@ -23,7 +23,7 @@ module sqrt_csa_rsa_tb;
         $display("Time    | A (Bit) | B (Bit) | Cin | o_rsa_2bit | o_rsa_3bit_add | o_rsa_3bit_sub | o_rsa_3bit | o_rsa_4bit_add | o_rsa_4bit_sub | o_rsa_4bit | Out (Dec)");
         $display("------------------------------------------------------------------");
 
-        $monitor("%4t   | %b   | %b    |  %b  |  %b    |  %b    |  %b    |  %b    |  %b    |  %b    |  %b    |  %b(%d)", 
+        $monitor("%4t | %b | %b | %b | %b | %b | %b | %b | %b | %b | %b |  %b(%d)", 
                  $time, A, B, Cin, 
                  UUT.o_rsa_2bit, UUT.o_rsa_3bit_add ,UUT.o_rsa_3bit_sub ,UUT.o_rsa_3bit, UUT.o_rsa_4bit_add ,UUT.o_rsa_4bit_sub ,UUT.o_rsa_4bit, Out, Out);
 

@@ -1,0 +1,119 @@
+#! /c/iverilog/bin/vvp
+:ivl_version "0.9.7 " "(v0_9_7)";
+:vpi_time_precision + 0;
+:vpi_module "system";
+:vpi_module "v2005_math";
+:vpi_module "va_math";
+S_00A6D338 .scope module, "tb_b2c_4bit" "tb_b2c_4bit" 2 1;
+ .timescale 0 0;
+v0121F0D0_0 .var "B", 3 0;
+RS_0122401C .resolv tri, L_0121F6A8, L_0121F1D8, L_0121F230, L_01249180;
+v0121F390_0 .net8 "X", 3 0, RS_0122401C; 4 drivers
+S_00A6CC50 .scope module, "uut" "b2c_4bit" 2 6, 3 1, S_00A6D338;
+ .timescale 0 0;
+L_00A6ADF0 .functor NOT 4, v0121F0D0_0, C4<0000>, C4<0000>, C4<0000>;
+L_00A6AF40 .functor NOT 1, L_0121F650, C4<0>, C4<0>, C4<0>;
+L_00A6B0C8 .functor XOR 1, L_0121F700, L_0121F338, C4<0>, C4<0>;
+L_00A6B138 .functor AND 1, L_0121F180, L_0121F288, C4<1>, C4<1>;
+L_00A6AE60 .functor XOR 1, L_0121F440, L_00A6B138, C4<0>, C4<0>;
+L_01220698 .functor AND 1, L_01248D60, L_012494F0, C4<1>, C4<1>;
+L_01220238 .functor AND 1, L_01220698, L_01249498, C4<1>, C4<1>;
+L_01220468 .functor XOR 1, L_01249548, L_01220238, C4<0>, C4<0>;
+v00A6B978_0 .net "B", 3 0, v0121F0D0_0; 1 drivers
+v00A638E0_0 .net "B_not", 3 0, L_00A6ADF0; 1 drivers
+v00A63938_0 .alias "X", 3 0, v0121F390_0;
+v00A63990_0 .net *"_s11", 0 0, L_0121F700; 1 drivers
+v00A64638_0 .net *"_s13", 0 0, L_0121F338; 1 drivers
+v00A64690_0 .net *"_s14", 0 0, L_00A6B0C8; 1 drivers
+v00A646E8_0 .net *"_s19", 0 0, L_0121F440; 1 drivers
+v00A6EDC8_0 .net *"_s21", 0 0, L_0121F180; 1 drivers
+v00A6EE20_0 .net *"_s23", 0 0, L_0121F288; 1 drivers
+v0121F4F0_0 .net *"_s24", 0 0, L_00A6B138; 1 drivers
+v0121F758_0 .net *"_s26", 0 0, L_00A6AE60; 1 drivers
+v0121F498_0 .net *"_s31", 0 0, L_01249548; 1 drivers
+v0121F548_0 .net *"_s33", 0 0, L_01248D60; 1 drivers
+v0121F2E0_0 .net *"_s35", 0 0, L_012494F0; 1 drivers
+v0121F5A0_0 .net *"_s36", 0 0, L_01220698; 1 drivers
+v0121F128_0 .net *"_s39", 0 0, L_01249498; 1 drivers
+v0121F5F8_0 .net *"_s40", 0 0, L_01220238; 1 drivers
+v0121F3E8_0 .net *"_s42", 0 0, L_01220468; 1 drivers
+v0121F7B0_0 .net *"_s5", 0 0, L_0121F650; 1 drivers
+v0121F808_0 .net *"_s6", 0 0, L_00A6AF40; 1 drivers
+L_0121F6A8 .part/pv L_00A6AF40, 0, 1, 4;
+L_0121F650 .part L_00A6ADF0, 0, 1;
+L_0121F1D8 .part/pv L_00A6B0C8, 1, 1, 4;
+L_0121F700 .part L_00A6ADF0, 1, 1;
+L_0121F338 .part L_00A6ADF0, 0, 1;
+L_0121F230 .part/pv L_00A6AE60, 2, 1, 4;
+L_0121F440 .part L_00A6ADF0, 2, 1;
+L_0121F180 .part L_00A6ADF0, 1, 1;
+L_0121F288 .part L_00A6ADF0, 0, 1;
+L_01249180 .part/pv L_01220468, 3, 1, 4;
+L_01249548 .part L_00A6ADF0, 3, 1;
+L_01248D60 .part L_00A6ADF0, 0, 1;
+L_012494F0 .part L_00A6ADF0, 1, 1;
+L_01249498 .part L_00A6ADF0, 2, 1;
+    .scope S_00A6D338;
+T_0 ;
+    %vpi_call 2 12 "$dumpfile", "tb_b2c_4bit.vcd";
+    %vpi_call 2 13 "$dumpvars", 1'sb0, S_00A6D338;
+    %set/v v0121F0D0_0, 0, 4;
+    %delay 10, 0;
+    %movi 8, 1, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 2, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 3, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 4, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 5, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 6, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 7, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 8, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 9, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 10, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 11, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 12, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 13, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %movi 8, 14, 4;
+    %set/v v0121F0D0_0, 8, 4;
+    %delay 10, 0;
+    %set/v v0121F0D0_0, 1, 4;
+    %delay 10, 0;
+    %vpi_call 2 33 "$finish";
+    %end;
+    .thread T_0;
+    .scope S_00A6D338;
+T_1 ;
+    %vpi_call 2 37 "$monitor", "Time = %0t | B = %b | X = %b", $time, v0121F0D0_0, v0121F390_0;
+    %end;
+    .thread T_1;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "b2c_4bit_tb.v";
+    "b2c_4bit.v";
