@@ -28,13 +28,13 @@ rsa #(.N(2)) rsa_2bit(  .A(A[1:0]),
 
 rsa #(.N(3)) rsa_3bit(  .A(A[4:2]),
                         .B(B[4:2]),
-                        .Cin(1'b0),
+                        .Cin(Cin),
                         .Sum(o_rsa_3bit_add[2:0]),
                         .Cout(o_rsa_3bit_add[3]));
 
 rsa #(.N(4)) rsa_4bit(  .A(A[8:5]),
                         .B(B[8:5]),
-                        .Cin(1'b0),
+                        .Cin(Cin),
                         .Sum(o_rsa_4bit_add[3:0]),
                         .Cout(o_rsa_4bit_add[4]));
 
@@ -75,15 +75,11 @@ module b2c_4bit (
     input [3:0] B,  
     output [3:0] X   
 );
-    
-    wire [3:0] B_not;
 
-    assign B_not = ~B;
-
-    assign X[0] = ~B_not[0];
-    assign X[1] = B_not[1] ^ B_not[0];
-    assign X[2] = B_not[2] ^ (B_not[1] & B_not[0]);
-    assign X[3] = B_not[3] ^ (B_not[0] & B_not[1] & B_not[2]);
+    assign X[0] = ~B[0];
+    assign X[1] = B[1] ^ B[0];
+    assign X[2] = B[2] ^ (B[1] & B[0]);
+    assign X[3] = B[3] ^ (B[0] & B[1] & B[2]);
 
 endmodule
 
@@ -94,22 +90,19 @@ module b2c_5bit (
 );
     
     wire [1:0] AND_out; // Tín hiệu trung gian từ các cổng AND
-    wire [4:0] B_not;
-
-    assign B_not = ~B;
 
     // Cổng NOT cho bit đầu tiên
-    assign X[0] = ~B_not[0];  
+    assign X[0] = ~B[0];  
 
     // Nhóm AND-3 và AND-4 theo cấu trúc 2-3-4
-    assign AND_out[0] = B_not[0] & B_not[1] & B_not[2];   
-    assign AND_out[1] = B_not[0] & B_not[1] & B_not[2] & B_not[3];       // 4-input AND
+    assign AND_out[0] = B[0] & B[1] & B[2];   
+    assign AND_out[1] = B[0] & B[1] & B[2] & B[3];       // 4-input AND
 
     // Tính toán các giá trị đầu ra X[i]
-    assign X[1] = B_not[1] ^ B_not[0];
-    assign X[2] = B_not[2] ^ (B_not[1] & B_not[0]);
-    assign X[3] = B_not[3] ^ AND_out[0];
-    assign X[4] = B_not[4] ^ AND_out[1];
+    assign X[1] = B[1] ^ B[0];
+    assign X[2] = B[2] ^ (B[1] & B[0]);
+    assign X[3] = B[3] ^ AND_out[0];
+    assign X[4] = B[4] ^ AND_out[1];
 
 endmodule
 

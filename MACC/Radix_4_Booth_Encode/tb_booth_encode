@@ -1,0 +1,85 @@
+#! /c/iverilog/bin/vvp
+:ivl_version "0.9.7 " "(v0_9_7)";
+:vpi_time_precision - 12;
+:vpi_module "system";
+:vpi_module "v2005_math";
+:vpi_module "va_math";
+S_012CCC38 .scope module, "booth_encoder_tb" "booth_encoder_tb" 2 3;
+ .timescale -9 -12;
+v012CA5F0_0 .var "B0", 0 0;
+v012CA908_0 .var "B1", 0 0;
+v012CA6F8_0 .var "B2", 0 0;
+v012CA6A0_0 .net "P0", 0 0, L_012C8348; 1 drivers
+v012CA858_0 .net "P1", 0 0, L_012C82D8; 1 drivers
+v012CA330_0 .net "P2", 0 0, L_012C8460; 1 drivers
+S_012CCBB0 .scope module, "dut" "booth_encoder" 2 9, 3 1, S_012CCC38;
+ .timescale 0 0;
+L_012C8460 .functor BUFZ 1, v012CA6F8_0, C4<0>, C4<0>, C4<0>;
+L_012C82D8 .functor XOR 1, v012CA5F0_0, v012CA908_0, C4<0>, C4<0>;
+L_012C8230 .functor NOT 1, v012CA6F8_0, C4<0>, C4<0>, C4<0>;
+L_012C8540 .functor AND 1, L_012C8230, v012CA908_0, C4<1>, C4<1>;
+L_012C8380 .functor AND 1, L_012C8540, v012CA5F0_0, C4<1>, C4<1>;
+L_012C83B8 .functor OR 1, v012CA908_0, v012CA5F0_0, C4<0>, C4<0>;
+L_012C8508 .functor NOT 1, L_012C83B8, C4<0>, C4<0>, C4<0>;
+L_012C83F0 .functor AND 1, v012CA6F8_0, L_012C8508, C4<1>, C4<1>;
+L_012C8348 .functor OR 1, L_012C8380, L_012C83F0, C4<0>, C4<0>;
+v012CD688_0 .net "B0", 0 0, v012CA5F0_0; 1 drivers
+v012CBEA0_0 .net "B1", 0 0, v012CA908_0; 1 drivers
+v012CBEF8_0 .net "B2", 0 0, v012CA6F8_0; 1 drivers
+v012CBF50_0 .alias "P0", 0 0, v012CA6A0_0;
+v012C3438_0 .alias "P1", 0 0, v012CA858_0;
+v012C3490_0 .alias "P2", 0 0, v012CA330_0;
+v012C34E8_0 .net *"_s10", 0 0, L_012C83B8; 1 drivers
+v012C4638_0 .net *"_s12", 0 0, L_012C8508; 1 drivers
+v012CA960_0 .net *"_s14", 0 0, L_012C83F0; 1 drivers
+v012CA388_0 .net *"_s4", 0 0, L_012C8230; 1 drivers
+v012CA598_0 .net *"_s6", 0 0, L_012C8540; 1 drivers
+v012CA228_0 .net *"_s8", 0 0, L_012C8380; 1 drivers
+    .scope S_012CCC38;
+T_0 ;
+    %vpi_call 2 20 "$dumpfile", "tb_booth_encoder.vcd";
+    %vpi_call 2 21 "$dumpvars", 1'sb0, S_012CCC38;
+    %vpi_call 2 23 "$display", "Testing Booth Encoder...";
+    %vpi_call 2 24 "$monitor", "Time=%1t | B=%b%b%b | P=%b%b%b", $time, v012CA6F8_0, v012CA908_0, v012CA5F0_0, v012CA330_0, v012CA858_0, v012CA6A0_0;
+    %set/v v012CA6F8_0, 0, 1;
+    %set/v v012CA908_0, 0, 1;
+    %set/v v012CA5F0_0, 0, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 0, 1;
+    %set/v v012CA908_0, 0, 1;
+    %set/v v012CA5F0_0, 1, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 0, 1;
+    %set/v v012CA908_0, 1, 1;
+    %set/v v012CA5F0_0, 0, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 0, 1;
+    %set/v v012CA908_0, 1, 1;
+    %set/v v012CA5F0_0, 1, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 1, 1;
+    %set/v v012CA908_0, 0, 1;
+    %set/v v012CA5F0_0, 0, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 1, 1;
+    %set/v v012CA908_0, 0, 1;
+    %set/v v012CA5F0_0, 1, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 1, 1;
+    %set/v v012CA908_0, 1, 1;
+    %set/v v012CA5F0_0, 0, 1;
+    %delay 1000, 0;
+    %set/v v012CA6F8_0, 1, 1;
+    %set/v v012CA908_0, 1, 1;
+    %set/v v012CA5F0_0, 1, 1;
+    %delay 1000, 0;
+    %vpi_call 2 36 "$display", "Test Completed!";
+    %vpi_call 2 37 "$finish";
+    %end;
+    .thread T_0;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "booth_encoder_tb.v";
+    "booth_encoder.v";

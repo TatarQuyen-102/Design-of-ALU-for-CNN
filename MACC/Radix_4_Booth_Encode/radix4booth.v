@@ -78,22 +78,22 @@ mux2to1 #(.N(9)) mux2to1_s1(.In0(o_s1_mux3to1),
                             .Out(o_s1));
 
 // sqrt carry save adder using RSA
-sqrt_csa_rsa sqrt_csa_rsa_s2(.A({o_s1[8], o_s1[8], o_s1[8:2]}),
+sqrt_csa_bec sqrt_csa_bec_s2(.A({o_s1[8], o_s1[8], o_s1[8:2]}),
                              .B(o_s2_mux3to1), 
                              .Cin(o_s2_be[2]), 
                              .Out(o_s2));
 
-sqrt_csa_rsa sqrt_csa_rsa_s3(.A({o_s2[9],o_s2[9:2]}), 
+sqrt_csa_bec sqrt_csa_bec_s3(.A({o_s2[8],o_s2[8],o_s2[8:2]}), 
                              .B(o_s3_mux3to1), 
                              .Cin(o_s3_be[2]), 
                              .Out(o_s3));
 
-sqrt_csa_rsa sqrt_csa_rsa_s4(.A({o_s3[9],o_s3[9:2]}), 
+sqrt_csa_bec sqrt_csa_bec_s4(.A({o_s3[8],o_s3[8],o_s3[8:2]}), 
                              .B(o_s4_mux3to1), 
                              .Cin(o_s4_be[2]), 
                              .Out(o_s4));
 
-assign o_mul = {o_s4[8:0], o_s3[1:0], o_s2[1:0], o_s1[1:0]};
+assign o_mul = {o_s4, o_s3[1:0], o_s2[1:0], o_s1[1:0]};
 
 endmodule
 
@@ -112,7 +112,7 @@ module booth_encoder (
 endmodule
 
 ///////////////////////////////////////////////////////////
-module sqrt_csa_rsa (
+module sqrt_csa_bec (
     A,
     B,
     Cin,
@@ -140,41 +140,74 @@ rsa #(.N(2)) rsa_2bit(  .A(A[1:0]),
                         .Sum(o_rsa_2bit[1:0]),
                         .Cout(o_rsa_2bit[2]));
 
-rsa #(.N(3)) rsa_3bit_add(  .A(A[4:2]),
-                            .B(B[4:2]),
-                            .Cin(0),
-                            .Sum(o_rsa_3bit_add[2:0]),
-                            .Cout(o_rsa_3bit_add[3]));
+rsa #(.N(3)) rsa_3bit(  .A(A[4:2]),
+                        .B(B[4:2]),
+                        .Cin(Cin),
+                        .Sum(o_rsa_3bit_add[2:0]),
+                        .Cout(o_rsa_3bit_add[3]));
 
-rsa #(.N(3)) rsa_3bit_sub(  .A(A[4:2]),
-                            .B(B[4:2]),
-                            .Cin(1),
-                            .Sum(o_rsa_3bit_sub[2:0]),
-                            .Cout(o_rsa_3bit_sub[3]));                           
+rsa #(.N(4)) rsa_4bit(  .A(A[8:5]),
+                        .B(B[8:5]),
+                        .Cin(Cin),
+                        .Sum(o_rsa_4bit_add[3:0]),
+                        .Cout(o_rsa_4bit_add[4]));
 
-rsa #(.N(4)) rsa_4bit_add(  .A(A[8:5]),
-                            .B(B[8:5]),
-                            .Cin(0),
-                            .Sum(o_rsa_4bit_add[3:0]),
-                            .Cout(o_rsa_4bit_add[4]));
+// Binary two’s complement block
 
-rsa #(.N(4)) rsa_4bit_sub(  .A(A[8:5]),
-                            .B(B[8:5]),
-                            .Cin(1),
-                            .Sum(o_rsa_4bit_sub[3:0]),
-                            .Cout(o_rsa_4bit_sub[4])); 
+b2c_4bit bec_rsa_3bit(  .B(o_rsa_3bit_add),
+                        .X(o_rsa_3bit_sub));
 
-mux2to1 #(.N(4)) mux_4bit(  .In0(o_rsa_3bit_add), 
-                            .In1(o_rsa_3bit_sub), 
-                            .Sel(o_rsa_2bit[2]), 
-                            .Out(o_rsa_3bit[3:0]));
+b2c_5bit bec_rsa_4bit(  .B(o_rsa_4bit_add),
+                        .X(o_rsa_4bit_sub));  
 
-mux2to1 #(.N(5)) mux_5bit(  .In0(o_rsa_4bit_add), 
-                            .In1(o_rsa_4bit_sub), 
-                            .Sel(o_rsa_3bit[3]), 
-                            .Out(o_rsa_4bit[4:0])); 
+mux2to1 #(.N(4)) mux_rsa_3bit(  .In0(o_rsa_3bit_add), 
+                                .In1(o_rsa_3bit_sub), 
+                                .Sel(o_rsa_2bit[2]), 
+                                .Out(o_rsa_3bit));
+
+mux2to1 #(.N(5)) mux_rsa_4bit(  .In0(o_rsa_4bit_add), 
+                                .In1(o_rsa_4bit_sub), 
+                                .Sel(o_rsa_3bit[3]), 
+                                .Out(o_rsa_4bit));
 
 assign Out = {o_rsa_4bit, o_rsa_3bit[2:0], o_rsa_2bit[1:0]};
+
+endmodule                   
+
+
+///////////////////////////////////////////////////////
+module b2c_4bit (
+    input [3:0] B,  
+    output [3:0] X   
+);
+
+    assign X[0] = ~B[0];
+    assign X[1] = B[1] ^ B[0];
+    assign X[2] = B[2] ^ (B[1] & B[0]);
+    assign X[3] = B[3] ^ (B[0] & B[1] & B[2]);
+
+endmodule
+
+///////////////////////////////////////////////////////
+module b2c_5bit (
+    input [4:0] B,  
+    output [4:0] X   
+);
+    
+    wire [1:0] AND_out; // Tín hiệu trung gian từ các cổng AND
+
+    // Cổng NOT cho bit đầu tiên
+    assign X[0] = ~B[0];  
+
+    // Nhóm AND-3 và AND-4 theo cấu trúc 2-3-4
+    assign AND_out[0] = B[0] & B[1] & B[2];   
+    assign AND_out[1] = B[0] & B[1] & B[2] & B[3];       // 4-input AND
+
+    // Tính toán các giá trị đầu ra X[i]
+    assign X[1] = B[1] ^ B[0];
+    assign X[2] = B[2] ^ (B[1] & B[0]);
+    assign X[3] = B[3] ^ AND_out[0];
+    assign X[4] = B[4] ^ AND_out[1];
 
 endmodule
 
@@ -273,8 +306,6 @@ module mod_bec (
     assign AND_out[3] = B[5] & B[4] & AND_out[1];        // 3-input AND
     assign AND_out[4] = AND_out[1] & B[6] & B[5] & B[4]; // 4-input AND
     assign AND_out[5] = B[7] & AND_out[4];               // AND với giá trị trước đó
-//    assign AND_out[6] = B[8] & B[7] & AND_out[4];        // 3-input AND
-//    assign AND_out[7] = B[9] & B[8] & B[7] & AND_out[4]; // 4-input AND
 
     // Tính toán các giá trị đầu ra X[i]
     assign X[1] = B[1] ^ B[0];
@@ -285,6 +316,5 @@ module mod_bec (
     assign X[6] = B[6] ^ AND_out[3];
     assign X[7] = B[7] ^ AND_out[4];
     assign X[8] = B[8] ^ AND_out[5];
-//    assign X[9] = B[9] ^ AND_out[6];
 
 endmodule

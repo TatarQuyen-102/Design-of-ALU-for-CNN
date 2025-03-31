@@ -2,11 +2,11 @@
 
 module Mul_tb;
     // Inputs
-    reg [7:0] x;
-    reg [7:0] y;
+    reg signed [7:0] x;
+    reg signed [7:0] y;
     
     // Output
-    wire [14:0] o_mul;
+    wire signed [14:0] o_mul;
     
     // Instantiate the Unit Under Test (UUT)
     Mul uut (
@@ -20,7 +20,7 @@ module Mul_tb;
         $dumpvars(0, Mul_tb);
         
         /////////// stage 1 ///////////
-        $display("Testing 8-bit Multiplier using Booth Encoding");
+        // $display("Testing 8-bit Multiplier using Booth Encoding");
         // $display("Time  |  x  |  y  | m_2x | o_s1_be | o_s1_mux3to1 | o_s1 ");
         // $monitor("%0t   | %b | %b | %b | %b | %b | %b", 
         //         $time, x[4:0], y[4:0],
@@ -54,6 +54,33 @@ module Mul_tb;
         x = 8'b00001000; y = 8'b00000011; #10; // 8 * 3
         x = 8'b00001111; y = 8'b00001111; #10; // 15 * 15
         x = 8'b00111000; y = 8'b00011001; #10; // 56 * 25
+
+        // Giá trị nhỏ
+        x = 8'b00000000; y = 8'b00000000; #10; // 0 * 0
+        x = 8'b00000001; y = 8'b00000000; #10; // 1 * 0
+        x = 8'b00000000; y = 8'b00000001; #10; // 0 * 1
+        x = 8'b00000001; y = 8'b00000001; #10; // 1 * 1
+        
+        // Giá trị lớn
+        x = 8'b01111111; y = 8'b01111111; #10; // 127 * 127
+        x = 8'b11111111; y = 8'b11111111; #10; // 255 * 255
+
+        // Giá trị âm (bù 2)
+        x = 8'b11111111; y = 8'b00000001; #10; // -1 * 1
+        x = 8'b10000000; y = 8'b00000001; #10; // -128 * 1
+        x = 8'b10000000; y = 8'b10000000; #10; // -128 * -128
+
+        // Số đối xứng
+        x = 8'b10101010; y = 8'b01010101; #10; // 170 * 85
+
+        // Số chẵn - lẻ
+        x = 8'b00000100; y = 8'b00000011; #10; // 4 * 3
+        x = 8'b00001011; y = 8'b00000110; #10; // 11 * 6
+
+        // Trường hợp biên
+        x = 8'b00000001; y = 8'b11111111; #10; // 1 * 255
+        x = 8'b11111111; y = 8'b00000001; #10; // -1 * 1
+        x = 8'b11111111; y = 8'b11111111; #10; // -1 * -1
         
         $display("Test Completed");
         $finish;
