@@ -1,29 +1,33 @@
-module cla_nbit #(
-    parameter N = 16  // Tổng số bit, phải là bội số của 4
-)(
+module cla #(parameter N = 16 )(
     input  [N-1:0] A, B,
     input         Cin,
-    output [N-1:0] S,
+    output [N-1:0] Sum,
     output        Cout
 );
     localparam NUM_BLOCKS = N / 4;
 
     wire [NUM_BLOCKS-1:0] carry;
+    wire [N-1:0] B_xor;
+
+    assign B_xor = B ^ {N{Cin}};
+    assign Cout = carry[NUM_BLOCKS-1];
 
     genvar i;
     generate
         for (i = 0; i < NUM_BLOCKS; i = i + 1) begin : cla_block
             cla_4bit cla_inst (
                 .A(A[i*4 + 3 : i*4]),
-                .B(B[i*4 + 3 : i*4]),
+                .B(B_xor[i*4 + 3 : i*4]),
                 .Cin((i == 0) ? Cin : carry[i-1]),
-                .S(S[i*4 + 3 : i*4]),
+                .Sum(Sum[i*4 + 3 : i*4]),
                 .Cout(carry[i])
             );
         end
     endgenerate
 
-    assign Cout = carry[NUM_BLOCKS-1];
+    assign carry_sign = carry[N];  
+    assign Cout = carry_sign ^ Cin;  // Xữ lý bit có dấu khi trừ
+    
 endmodule
 
 
@@ -31,7 +35,7 @@ endmodule
 module cla_4bit(
     input [3:0] A, B,
     input Cin,
-    output [3:0] S,
+    output [3:0] Sum,
     output Cout
 );
     wire G[3:0], P[3:0];
@@ -53,9 +57,9 @@ module cla_4bit(
     assign C[3] = G[2] | (P[2] & (G[1] | (P[1] & (G[0] | (P[0] & Cin)))));
     assign Cout = G[3] | (P[3] & (G[2] | (P[2] & (G[1] | (P[1] & (G[0] | (P[0] & Cin)))))));
 
-    assign S[0] = P[0] ^ C[0];
-    assign S[1] = P[1] ^ C[1];
-    assign S[2] = P[2] ^ C[2];
-    assign S[3] = P[3] ^ C[3];
+    assign Sum[0] = P[0] ^ C[0];
+    assign Sum[1] = P[1] ^ C[1];
+    assign Sum[2] = P[2] ^ C[2];
+    assign Sum[3] = P[3] ^ C[3];
    
 endmodule
