@@ -1,24 +1,16 @@
 module ReLU_out(
     input wire cmp_flag,
-    input wire shft_flag,
-    input wire [2:0] shft_val,
     input wire [7:0] cmp_val,
     input wire [15:0] val_in,
     output reg [7:0] val_out
 );
 
-    wire [7:0] temp_relu, temp_shift, temp_clip, temp_shift_clip;
+    wire [7:0] temp_relu, temp_clip;
 
     // Instantiate submodules
     ReLU ReLU_inst(
         .val_in(val_in),
         .temp_relu(temp_relu)
-    );
-
-    SignedArithmeticRightShift Shift_inst(
-        .in(temp_relu),
-        .shft_val(shft_val),
-        .out(temp_shift)
     );
 
     LESS Comparator1(
@@ -27,20 +19,10 @@ module ReLU_out(
         .MUX_Out(temp_clip)
     );
 
-    LESS Comparator2(
-        .A(temp_shift),
-        .B(cmp_val),
-        .MUX_Out(temp_shift_clip)
-    );
-
     // Control logic for output
     always @(*) begin
-        if (cmp_flag && shft_flag) 
-            val_out <= temp_shift_clip;
-        else if (cmp_flag) 
+        if (cmp_flag) 
             val_out <= temp_clip;
-        else if (shft_flag) 
-            val_out <= temp_shift;
         else 
             val_out <= temp_relu;
     end
@@ -53,26 +35,6 @@ module ReLU #(parameter IP_WIDTH = 16, OP_WIDTH = 8) (
     output [OP_WIDTH-1:0] temp_relu
 );
     assign temp_relu = val_in[IP_WIDTH-1] ? 0 : val_in;
-endmodule
-
-// Signed Arithmetic Right Shift Module
-module SignedArithmeticRightShift (
-    input [7:0] in,
-    input [2:0] shft_val,
-    output [7:0] out
-);
-    wire [7:0] shifted [0:7];
-
-    assign shifted[0] = in;
-    assign shifted[1] = {in[7], in[7:1]};
-    assign shifted[2] = {{2{in[7]}}, in[7:2]};
-    assign shifted[3] = {{3{in[7]}}, in[7:3]};
-    assign shifted[4] = {{4{in[7]}}, in[7:4]};
-    assign shifted[5] = {{5{in[7]}}, in[7:5]};
-    assign shifted[6] = {{6{in[7]}}, in[7:6]};
-    assign shifted[7] = {{7{in[7]}}, in[7:7]};
-
-    assign out = shifted[shft_val];
 endmodule
 
 // LESS module
