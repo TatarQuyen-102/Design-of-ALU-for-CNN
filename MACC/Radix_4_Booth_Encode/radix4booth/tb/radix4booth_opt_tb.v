@@ -34,8 +34,8 @@ module Mul_tb;
     integer error_count = 0;
     
     // Test cases
-    reg [7:0] test_x [0:19];
-    reg [7:0] test_y [0:19];
+    reg [7:0] test_x [0:29];
+    reg [7:0] test_y [0:29];
     
     initial begin
         // Initialize test cases
@@ -59,11 +59,22 @@ module Mul_tb;
         test_x[17] = 8'b01010101; test_y[17] = 8'b10101010; // 85 * -86
         test_x[18] = 8'b01100100; test_y[18] = 8'b00001010; // 100 * 10
         test_x[19] = 8'b00101010; test_y[19] = 8'b00001010; // 42 * 10
+        test_x[20] = 8'b11110000; test_y[20] = 8'b00001111; // -16 * 15
+        test_x[21] = 8'b00010110; test_y[21] = 8'b11111100; // 22 * -4
+        test_x[22] = 8'b10000001; test_y[22] = 8'b00000010; // -127 * 2
+        test_x[23] = 8'b00000011; test_y[23] = 8'b00000011; // 3 * 3
+        test_x[24] = 8'b11111110; test_y[24] = 8'b11111101; // -2 * -3
+        test_x[25] = 8'b00110011; test_y[25] = 8'b01010101; // 51 * 85
+        test_x[26] = 8'b11001100; test_y[26] = 8'b00110011; // -52 * 51
+        test_x[27] = 8'b01111111; test_y[27] = 8'b00000001; // 127 * 1
+        test_x[28] = 8'b11100001; test_y[28] = 8'b00000100; // -31 * 4
+        test_x[29] = 8'b00010010; test_y[29] = 8'b11101111; // 18 * -17
+
     end
     
     // Setup waveform dump
     initial begin
-        $dumpfile("Mul_tb.vcd");
+        $dumpfile("mul_opt_tb.vcd");
         $dumpvars(0, Mul_tb);
         
         // Header for the test report
@@ -85,7 +96,7 @@ module Mul_tb;
         #10;
         
         // Apply all test cases
-        for (i = 0; i < 20; i = i + 1) begin
+        for (i = 0; i < 30; i = i + 1) begin
             @(posedge clk);
             x = test_x[i];
             y = test_y[i];
