@@ -54,8 +54,8 @@ Implements the `ReLU(x) = max(0, x)` activation function to introduce non-linear
 
 ## 🛠️ Implementation Details
 
-- **Platform**: AMD Zynq 7000 SoC (ZC702 Evaluation Kit)  
-- **Language**: Verilog HDL  
+- **Platform**: Nexyx 4 DDR 
+- **Language**: Verilog   
 - **Simulation Tool**: Icarus Verilog  
 - **Synthesis Tool**: Xilinx Vivado  
 - **Target Applications**: CNN accelerators (e.g., image classification, edge inference)
