@@ -79,6 +79,5 @@ We evaluate the design based on:
 ├── src/                # Verilog source files (MACC, ReLU, Pooling, Booth, etc.)
 ├── tb/                 # Testbenches for each module
 ├── sim/                # Simulation results
-├── synth/              # Synthesis reports from Vivado
 ├── docs/               # Architecture diagrams and documentation
 └── README.md           # Project overview
