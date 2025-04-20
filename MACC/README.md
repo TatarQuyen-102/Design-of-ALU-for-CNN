@@ -4,7 +4,7 @@ This project introduces an **8-bit Multiply Accumulate Unit (MACC)**, also refer
 
 We implement:
 
-- ✅ **MAC operations** using Radix-4 Booth encoding + Carry Save Adder (CSA)
+- ✅ **MAC operations** using Radix-4 Booth encoding + Carry Select Adder (CSLA)
 - ✅ **Max Pooling**
 - ✅ **ReLU Activation**
 - ✅ **Fixed-point optimization** for high performance
